@@ -110,7 +110,7 @@ function generate_model(setup::Dict,inputs::Dict,OPTIMIZER::MOI.OptimizerWithAtt
 	@expression(EP, eObj, 0)
 
 	# Infrastructure
-	EP = discharge(EP, inputs)
+	EP = discharge(EP, inputs, setup["PieceWiseHeatRate"], setup["CostCO2"])
 
 	EP = non_served_energy(EP, inputs)
 
@@ -156,8 +156,10 @@ function generate_model(setup::Dict,inputs::Dict,OPTIMIZER::MOI.OptimizerWithAtt
 	end
 	# Model constraints, variables, expression related to thermal resource technologies
 	if !isempty(inputs["THERM_ALL"])
-		EP = thermal(EP, inputs, setup["UCommit"], setup["Reserves"])
+		EP = thermal(EP, inputs, setup["UCommit"], setup["Reserves"], setup["PieceWiseHeatRate"])
 	end
+
+
 
 	# Policies
 	# CO2 emissions limits
@@ -176,6 +178,11 @@ function generate_model(setup::Dict,inputs::Dict,OPTIMIZER::MOI.OptimizerWithAtt
 
 	if (setup["MinCapReq"] == 1)
 		EP = minimum_capacity_requirement(EP, inputs)
+	end
+
+	# Model constraints, variables, expression related to fleccs
+	if (setup["FLECCS"] >= 1)
+		EP = fleccs(EP, inputs, setup["FLECCS"], setup["UCommit"], setup["Reserves"], setup["CostCO2"], setup["ParameterScale"])
 	end
 
 	## Define the objective function
